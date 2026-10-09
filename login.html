@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>Iniciar sesión | Hospital Seguro</title>
+    <style>
+        :root { color-scheme: light; --ink: #173543; --muted: #6b828b; --teal: #087e80; --navy: #173a4b; }
+        * { box-sizing: border-box; }
+        body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 24px; color: var(--ink); background: radial-gradient(circle at 15% 12%, #dff2ed 0, transparent 30%), #f2f7f7; font: 15px/1.5 Inter, "Segoe UI", Arial, sans-serif; }
+        .login-layout { width: min(920px, 100%); display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; border: 1px solid #e0e9ea; border-radius: 20px; background: white; box-shadow: 0 24px 70px rgba(18, 51, 65, .12); }
+        .welcome { padding: 52px 42px; color: white; background: var(--navy); }
+        .mark { width: 46px; height: 46px; display: grid; place-items: center; margin-bottom: 34px; border-radius: 14px; color: #a9e4d8; background: rgba(255,255,255,.12); font-size: 26px; font-weight: 700; }
+        .welcome h1 { margin: 0 0 14px; font-size: 30px; line-height: 1.18; letter-spacing: -.03em; }
+        .welcome p { color: #c4d6dc; font-size: 14px; }
+        .control-list { display: grid; gap: 12px; margin: 30px 0 0; padding: 0; list-style: none; color: #d9e9e9; font-size: 13px; }
+        .control-list li::before { margin-right: 9px; color: #8dd5c3; content: "•"; }
+        .form-side { padding: 52px 42px; }
+        .eyebrow { color: var(--teal); font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+        h2 { margin: 8px 0 5px; font-size: 25px; letter-spacing: -.025em; }
+        .hint { margin: 0 0 25px; color: var(--muted); font-size: 13px; }
+        label { display: block; margin: 16px 0 6px; font-size: 12px; font-weight: 700; }
+        input { width: 100%; padding: 12px 13px; border: 1px solid #d8e2e4; border-radius: 8px; outline: none; color: var(--ink); background: #fcfefe; font: inherit; }
+        input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(8,126,128,.12); }
+        .submit { width: 100%; margin-top: 22px; padding: 12px; border: 0; border-radius: 8px; color: white; background: var(--teal); cursor: pointer; font: inherit; font-weight: 750; }
+        .submit:hover { background: #086568; }
+        .error { margin: 0 0 16px; padding: 11px 12px; border: 1px solid #f1d4d4; border-radius: 8px; color: #963c3c; background: #fff6f6; font-size: 12px; }
+        .privacy { margin-top: 21px; color: #7b8e94; font-size: 11px; }
+        @media (max-width: 680px) { .login-layout { grid-template-columns: 1fr; } .welcome { padding: 30px; } .welcome .mark { margin-bottom: 20px; } .control-list { margin-top: 18px; } .form-side { padding: 34px 30px; } }
+    </style>
+</head>
+<body>
+    <main class="login-layout">
+        <section class="welcome">
+            <div class="mark" aria-hidden="true">+</div>
+            <h1>Hospital Seguro</h1>
+            <p>Acceso al panel de controles de privacidad y seguridad de la información clínica.</p>
+            <ul class="control-list">
+                <li>Control de acceso por roles (RBAC)</li>
+                <li>Enmascaramiento dinámico de datos (DDM)</li>
+                <li>Auditoría de actividad</li>
+                <li>Sanitización Safe Harbor</li>
+            </ul>
+        </section>
+        <section class="form-side">
+            <div class="eyebrow">Acceso institucional</div>
+            <h2>Iniciar sesión</h2>
+            <p class="hint">Ingresa la cuenta que tienes registrada en Hospital Seguro.</p>
+            {% if error %}<div class="error" role="alert">{{ error }}</div>{% endif %}
+            <form action="{{ url_for('login') }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <label for="username">Nombre de usuario</label>
+                <input id="username" name="username" autocomplete="username" required autofocus>
+                <label for="password">Contraseña</label>
+                <input id="password" name="password" type="password" autocomplete="current-password" required>
+                <button class="submit" type="submit">Validar acceso</button>
+            </form>
+            <p class="privacy">La contraseña se verifica contra su hash almacenado en la base de datos. El acceso al panel depende del rol asignado a la cuenta.</p>
+        </section>
+    </main>
+</body>
+</html>

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>Hospital Seguro | Controles HIPAA</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --ink: #142d3b;
+            --muted: #69808a;
+            --line: #e1eaec;
+            --surface: #fff;
+            --canvas: #f3f7f7;
+            --teal: #087e80;
+            --teal-dark: #086568;
+            --mint: #e2f4ef;
+            --navy: #173a4b;
+            --danger: #b74242;
+            --shadow: 0 12px 32px rgba(18, 51, 65, .06);
+        }
+        
+        * { box-sizing: border-box; } /* CORREGIDO: Faltaba el asterisco */
+        
+        body { margin: 0; background: var(--canvas); color: var(--ink); font: 15px/1.5 Inter, "Segoe UI", Arial, sans-serif; }
+        button { font: inherit; }
+        .topbar { background: var(--navy); color: white; }
+        .topbar-inner { max-width: 1240px; margin: auto; min-height: 76px; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand-mark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; background: rgba(255,255,255,.12); color: #a8e5d8; font-size: 24px; font-weight: 700; }
+        .brand-name { font-weight: 700; letter-spacing: .01em; }
+        .brand-caption { color: #b8ccd2; font-size: 12px; }
+        .user-area { display: flex; align-items: center; gap: 14px; }
+        .user-name { font-size: 13px; color: #e2eef0; }
+        .role-chip { display: inline-block; margin: 3px 4px 0 0; padding: 3px 9px; border-radius: 999px; background: rgba(154,226,211,.16); color: #b6f1df; font-size: 11px; font-weight: 700; }
+        .logout { padding: 8px 12px; border: 1px solid rgba(255,255,255,.35); border-radius: 8px; color: white; background: transparent; cursor: pointer; font-size: 12px; }
+        .logout:hover { background: rgba(255,255,255,.12); }
+        main { max-width: 1240px; margin: 0 auto; padding: 34px 24px 56px; }
+        .intro { display: flex; justify-content: space-between; align-items: end; gap: 18px; margin-bottom: 24px; }
+        h1 { margin: 0 0 6px; font-size: clamp(25px, 3vw, 33px); letter-spacing: -.035em; }
+        .intro p { margin: 0; color: var(--muted); }
+        .secure-label { white-space: nowrap; padding: 8px 12px; border: 1px solid #cde6df; border-radius: 999px; color: #287965; background: #eff9f5; font-size: 12px; font-weight: 700; }
+        .profiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-bottom: 24px; }
+        .profile-card, .workspace { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); }
+        .profile-card { padding: 16px 18px; }
+        .profile-card.active { border-color: #9dd7c7; box-shadow: 0 0 0 2px rgba(8,126,128,.07); }
+        .profile-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 5px; }
+        .profile-head strong { font-size: 14px; }
+        .active-label { color: #08775f; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+        .profile-card p { margin: 0; color: var(--muted); font-size: 12px; }
+        .workspace { overflow: hidden; }
+        .tabs { display: flex; gap: 4px; padding: 0 20px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+        .tab { position: relative; padding: 16px 13px 14px; border: 0; color: var(--muted); background: none; white-space: nowrap; cursor: pointer; font-size: 13px; font-weight: 650; }
+        .tab[aria-selected="true"] { color: var(--teal-dark); }
+        .tab[aria-selected="true"]::after { position: absolute; right: 10px; bottom: -1px; left: 10px; height: 3px; border-radius: 3px 3px 0 0; background: var(--teal); content: ""; }
+        .panel { padding: 24px; }
+        .panel[hidden] { display: none; }
+        .panel-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 17px; }
+        h2 { margin: 0 0 3px; font-size: 18px; }
+        .subtitle { margin: 0; color: var(--muted); font-size: 13px; }
+        .button { padding: 9px 13px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: white; cursor: pointer; font-size: 12px; font-weight: 700; }
+        .button:hover { border-color: #9accc4; background: #f5fbf9; }
+        .button.primary { border-color: var(--teal); color: white; background: var(--teal); }
+        .button.primary:hover { background: var(--teal-dark); }
+        .button.danger { border-color: #f0cece; color: var(--danger); background: #fff9f9; }
+        .button:disabled { opacity: .6; cursor: wait; }
+        .notice { display: none; margin: 0 0 16px; padding: 11px 13px; border: 1px solid #f1d4d4; border-radius: 8px; color: #913838; background: #fff6f6; font-size: 13px; }
+        .notice.visible { display: block; }
+        .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { padding: 11px 13px; color: #5b727d; background: #f6f9f9; font-size: 11px; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
+        td { padding: 12px 13px; border-top: 1px solid #edf1f2; color: #344e59; font-size: 13px; }
+        .empty { padding: 26px; color: var(--muted); text-align: center; }
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 999px; color: #176e71; background: #e5f4f2; font-size: 11px; font-weight: 700; }
+        .safeharbor { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 24px; align-items: center; }
+        .safeharbor-copy { max-width: 700px; }
+        .safeharbor-copy p { color: var(--muted); }
+        .safeharbor-callout { padding: 16px; border: 1px solid #e6eadd; border-radius: 10px; color: #627047; background: #fafbf5; font-size: 12px; }
+        .result { margin-top: 14px; font-size: 13px; font-weight: 650; }
+        .result.success { color: #167454; }
+        .result.error { color: #a33c3c; }
+        .footer { margin-top: 20px; color: #83949b; font-size: 11px; text-align: center; }
+        @media (max-width: 650px) {
+            .topbar-inner { align-items: flex-start; padding: 14px 16px; }
+            .user-area { align-items: flex-end; flex-direction: column; gap: 8px; }
+            main { padding: 25px 14px 40px; }
+            .intro { align-items: flex-start; flex-direction: column; }
+            .panel { padding: 18px 14px; }
+            .tabs { padding: 0 8px; }
+            .safeharbor { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div class="brand">
+                <div class="brand-mark" aria-hidden="true">+</div>
+                <div>
+                    <div class="brand-name">Hospital Seguro</div>
+                    <div class="brand-caption">Panel de seguridad y privacidad</div>
+                </div>
+            </div>
+            <div class="user-area">
+                <div class="user-name">
+                    Sesión: <strong>{{ username }}</strong><br>
+                    {% for profile in profiles %}
+                        <span class="role-chip">{{ profile.name }}</span>
+                    {% endfor %}
+                </div>
+                <form action="{{ url_for('logout') }}" method="post" id="logout-form">
+                    <button class="logout" type="submit">Cerrar sesión</button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="intro">
+            <div>
+                <h1>Controles de acceso y privacidad</h1>
+                <p>La sesión está conectada a SQL Server con tu identidad y permisos de base de datos.</p>
+            </div>
+            <div class="secure-label">Controles de privacidad configurados</div>
+        </section>
+
+        <section class="profiles" aria-label="Perfiles RBAC">
+            {% for profile in profiles %}
+            <article class="profile-card{% if profile.active %} active{% endif %}">
+                <div class="profile-head">
+                    <strong>{{ profile.name }}</strong>
+                    {% if profile.active %}<span class="active-label">Perfil activo</span>{% endif %}
+                </div>
+                <p>{{ profile.permissions }}</p>
+            </article>
+            {% endfor %}
+        </section>
+
+        <section class="workspace">
+            <div class="tabs" role="tablist" aria-label="Controles HIPAA">
+                <button class="tab" id="patients-tab" role="tab" aria-selected="true" aria-controls="patients-panel">Pacientes · DDM</button>
+                {% if "Hospital_Admin" in roles %}
+                <button class="tab" id="audit-tab" role="tab" aria-selected="false" aria-controls="audit-panel">Auditoría activa</button>
+                <button class="tab" id="safe-tab" role="tab" aria-selected="false" aria-controls="safe-panel">Sanitización · Safe Harbor</button>
+                {% endif %}
+            </div>
+
+            <section class="panel" id="patients-panel" role="tabpanel" aria-labelledby="patients-tab">
+                <div class="panel-head">
+                    <div>
+                        <h2>Directorio de pacientes</h2>
+                        <p class="subtitle">
+                            {% if "Hospital_Recepcion" in roles and "Hospital_Admin" not in roles and "Hospital_Medico" not in roles %}
+                            Consulta mediante la vista autorizada para recepción. DDM depende del usuario y los permisos en SQL Server.
+                            {% else %}
+                            Los datos enmascarados son aplicados por SQL Server de acuerdo con los permisos de tu cuenta.
+                            {% endif %}
+                        </p>
+                    </div>
+                    <button class="button" id="refresh-patients">Actualizar datos</button>
+                </div>
+                <div class="notice" id="patients-error" role="alert"></div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>ID</th><th>Identificación</th><th>Nombre</th><th>Apellidos</th><th>Correo</th><th>Teléfono</th></tr></thead>
+                        <tbody id="patients-body"><tr><td class="empty" colspan="6">Cargando pacientes…</td></tr></tbody>
+                    </table>
+                </div>
+            </section>
+
+            {% if "Hospital_Admin" in roles %}
+            <section class="panel" id="audit-panel" role="tabpanel" aria-labelledby="audit-tab" hidden>
+                <div class="panel-head">
+                    <div>
+                        <h2>Bitácora de auditoría</h2>
+                        <p class="subtitle">Eventos recientes registrados por la base de datos.</p>
+                    </div>
+                    <button class="button" id="refresh-audit">Actualizar bitácora</button>
+                </div>
+                <div class="notice" id="audit-error" role="alert"></div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>ID evento</th><th>Fecha</th><th>Acción</th><th>Tabla</th><th>Detalle</th></tr></thead>
+                        <tbody id="audit-body"><tr><td class="empty" colspan="5">Selecciona esta pestaña para consultar los eventos.</td></tr></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="panel" id="safe-panel" role="tabpanel" aria-labelledby="safe-tab" hidden>
+                <div class="safeharbor">
+                    <div class="safeharbor-copy">
+                        <h2>Sanitización para entornos no productivos</h2>
+                        <p>Ejecuta el procedimiento de sanitización Safe Harbor configurado en la base de datos. Esta acción puede modificar datos descriptivos y está disponible solo para el perfil administrador.</p>
+                        <button class="button danger" id="run-sanitization">Ejecutar sanitización</button>
+                        <div class="result" id="sanitization-result" role="status" aria-live="polite"></div>
+                    </div>
+                    <aside class="safeharbor-callout">Verifica que estás trabajando en el entorno correcto antes de iniciar un proceso que modifica información.</aside>
+                </div>
+            </section>
+            {% endif %}
+        </section>
+        <div class="footer">El acceso y el enmascaramiento efectivos los determina SQL Server. Esta demostración no constituye por sí sola una certificación de cumplimiento HIPAA.</div>
+    </main>
+
+    <script>
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        const tabs = [...document.querySelectorAll('[role="tab"]')];
+
+        function showError(element, message) {
+            element.textContent = message;
+            element.classList.add('visible');
+        }
+
+        function clearError(element) {
+            element.textContent = '';
+            element.classList.remove('visible');
+        }
+
+        async function requestJson(url, options = {}) {
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    ...(options.headers || {}),
+                    ...(options.method === 'POST' ? { 'X-CSRF-Token': csrfToken } : {})
+                }
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                if (response.status === 401) window.location.assign('/login');
+                throw new Error(data.error || 'La solicitud no pudo completarse.');
+            }
+            return data;
+        }
+
+        function fillTable(body, records, columns) {
+            body.replaceChildren();
+            if (!records.length) {
+                const row = body.insertRow();
+                const cell = row.insertCell();
+                cell.colSpan = columns.length;
+                cell.className = 'empty';
+                cell.textContent = 'No hay registros para mostrar.';
+                return;
+            }
+            for (const record of records) {
+                const row = body.insertRow();
+                for (const column of columns) {
+                    const cell = row.insertCell();
+                    const value = record[column.key];
+                    if (column.badge && value !== null && value !== undefined) {
+                        const badge = document.createElement('span');
+                        badge.className = 'badge';
+                        badge.textContent = String(value);
+                        cell.append(badge);
+                    } else if (column.date && value) {
+                        const parsed = new Date(value);
+                        cell.textContent = Number.isNaN(parsed.getTime()) ? String(value) : parsed.toLocaleString();
+                    } else {
+                        cell.textContent = value === null || value === undefined ? '—' : String(value);
+                    }
+                }
+            }
+        }
+
+        async function loadPatients() {
+            const error = document.getElementById('patients-error');
+            clearError(error);
+            try {
+                const data = await requestJson('/api/pacientes');
+                fillTable(document.getElementById('patients-body'), data, [
+                    { key: 'PacienteID' }, { key: 'Identificacion' }, { key: 'Nombre' },
+                    { key: 'Apellidos' }, { key: 'Correo' }, { key: 'Telefono' }
+                ]);
+            } catch (exception) {
+                showError(error, exception.message);
+            }
+        }
+
+        async function loadAudit() {
+            const error = document.getElementById('audit-error');
+            clearError(error);
+            try {
+                const data = await requestJson('/api/auditoria');
+                fillTable(document.getElementById('audit-body'), data, [
+                    { key: 'AuditoriaID' }, { key: 'FechaEvento', date: true },
+                    { key: 'Accion', badge: true }, { key: 'TablaAfectada' }, { key: 'Detalle' }
+                ]);
+            } catch (exception) {
+                showError(error, exception.message);
+            }
+        }
+
+        tabs.forEach((tab) => {
+            tab.addEventListener('click', () => {
+                tabs.forEach((item) => item.setAttribute('aria-selected', String(item === tab)));
+                document.querySelectorAll('[role="tabpanel"]').forEach((panel) => {
+                    panel.hidden = panel.id !== tab.getAttribute('aria-controls');
+                });
+                if (tab.id === 'audit-tab') loadAudit();
+            });
+        });
+
+        document.getElementById('refresh-patients').addEventListener('click', loadPatients);
+        
+        // Excelente uso de guardias condicionales para elementos que podrían no existir en el DOM por Jinja
+        const refreshAudit = document.getElementById('refresh-audit');
+        if (refreshAudit) refreshAudit.addEventListener('click', loadAudit);
+
+        const runSanitization = document.getElementById('run-sanitization');
+        if (runSanitization) {
+            runSanitization.addEventListener('click', async () => {
+                if (!window.confirm('Esta acción puede modificar datos de pacientes. ¿Deseas continuar?')) return;
+                const result = document.getElementById('sanitization-result');
+                result.className = 'result';
+                result.textContent = 'Ejecutando procedimiento…';
+                runSanitization.disabled = true;
+                try {
+                    const data = await requestJson('/api/anonimizar', { method: 'POST' });
+                    result.classList.add('success');
+                    result.textContent = data.mensaje;
+                    await loadPatients();
+                } catch (exception) {
+                    result.classList.add('error');
+                    result.textContent = exception.message;
+                } finally {
+                    runSanitization.disabled = false;
+                }
+            });
+        }
+
+        document.getElementById('logout-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            try {
+                await fetch('/logout', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-Token': csrfToken }
+                });
+            } finally {
+                window.location.assign('/login');
+            }
+        });
+
+        loadPatients();
+    </script>
+</body>
+</html>
