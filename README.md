@@ -68,9 +68,6 @@ Usa un `pyodbc` simulado (no necesita SQL Server) y comprueba login por rol, mat
 - **Sesiones en memoria.** Se pierden al reiniciar y no funcionan con varios procesos.
 - **Seguridad HTTP.** Incluye CSRF en toda operación de escritura, cookies `HttpOnly`/`SameSite`, CSP estricta (sin scripts ni estilos inline), `no-store`, bloqueo por intentos fallidos y cierre de sesión por inactividad (30 min) y duración máxima (8 h).
 
-## Credenciales
-
-Si tu `.env` anterior (con la contraseña de la cuenta de servicio y el `SECRET_KEY`) estuvo en un chat, repositorio o correo, cámbialos. Este proyecto trae solo `.env.example` con valores de relleno.
 
 ## Estructura
 
